@@ -6,8 +6,8 @@ import signal
 import time
 import click
 import zmq
-# import dcs.oscilloscopeRead.scopeRead as scopeRead
-
+import oscilloscopeRead.scopeRead as scopeRead
+import multiprocessing
 
 class zmq_env:
     def __init__(self):
@@ -35,14 +35,17 @@ def minidaq(ctx):
 @click.pass_context
 
 def trigger_read(ctx, n_events):
-    # scopeReader = scopeRead.Reader("ttyACM3")
+    scopeReader = scopeRead.Reader("ttyACM1")
+
+
+
     #run_period = time.time() + 60*0.5 #How long you want to search for triggers for
     # trig_count_1 = int(os.popen('trdbox reg-read 0x102').read().split('\n')[0])
 
     ctx.obj.trdbox.send_string("read 0x102")
     trig_count_1 = int(ctx.obj.trdbox.recv_string(), 16)
     print(trig_count_1)
-    # os.system("trdbox unblock")
+
     trig_count_2 = 0
     i = 0
     ctx.obj.trdbox.send_string("write 0x103 1")
@@ -56,7 +59,9 @@ def trigger_read(ctx, n_events):
             i += 1
 
             try:
-                 ctx.invoke(readevent)
+                #  ctx.invoke(readevent)
+                # print('Reading event')
+                read_scope(scopeReader)
             except:
                  i -= 1
 
@@ -99,4 +104,13 @@ def old_readevent(ctx):
 
     f = open("data", "wb")
     f.write(data)
+    f.close()
+
+
+def read_scope(reader):
+
+    waveforms = reader.getData()
+
+    f = open('scopeData.txt', 'w')
+    f.write(str(waveforms[0])+'\n'+str(waveforms[1])+'\n'+str(waveforms[2]))
     f.close()
