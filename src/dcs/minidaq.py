@@ -6,6 +6,8 @@ import signal
 import time
 import click
 import zmq
+# import dcs.oscilloscopeRead.scopeRead as scopeRead
+
 
 class zmq_env:
     def __init__(self):
@@ -42,13 +44,13 @@ def trigger_read(ctx, n_events):
     print(trig_count_1)
     # os.system("trdbox unblock")
     trig_count_2 = 0
-    ctx.obj.trdbox.send_string("write 0x103 1")
     i = 0
+    ctx.obj.trdbox.send_string("write 0x103 1")
+    ctx.obj.trdbox.recv_string()
     
     while i < (n_events):
         ctx.obj.trdbox.send_string("read 0x102")
         trig_count_2 = int(ctx.obj.trdbox.recv_string(), 16)
-        print(trig_count_2)
 
         if trig_count_2 != trig_count_1:
             i += 1
@@ -61,6 +63,7 @@ def trigger_read(ctx, n_events):
             ctx.obj.trdbox.send_string("read 0x102")
             trig_count_1 = int(ctx.obj.trdbox.recv_string(), 16)
             ctx.obj.trdbox.send_string("write 0x103 1")
+            ctx.obj.trdbox.recv_string()
         else:
             pass
 
@@ -73,7 +76,6 @@ def readevent(ctx):
 
     # ctx.obj.trdbox.send_string(f"write 0x103 1") # unblocks
     # ctx.obj.trdbox.send_string(f"write 0x08 1") # send trigger
-    print(ctx.obj.trdbox.recv_string())
 
     ctx.obj.sfp0.send_string("read")
     data = ctx.obj.sfp0.recv()
@@ -83,3 +85,18 @@ def readevent(ctx):
     f.write(data)
     f.close()
 
+@minidaq.command()
+@click.pass_context
+def old_readevent(ctx):
+
+    ctx.obj.trdbox.send_string(f"write 0x103 1") # unblocks
+    # ctx.obj.trdbox.send_string(f"write 0x08 1") # send trigger
+    print(ctx.obj.trdbox.recv_string())
+
+    ctx.obj.sfp0.send_string("read")
+    data = ctx.obj.sfp0.recv()
+    print(len(data))
+
+    f = open("data", "wb")
+    f.write(data)
+    f.close()
